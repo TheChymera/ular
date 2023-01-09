@@ -1,13 +1,16 @@
 #!/usr/bin/env bash
 
 USAGE="Usage:\n\
-        $(basename "$0") [-b -q -t] [-a <alert>] <duration>\n\
+        $(basename "$0") [-b -l -q -t] [-a <alert>] <duration>\n\
         Arguments:
         duration: Duration until the alarm is played (format <days>d<hours>h<minutes>m<seconds>s), e.g.:\n\
                 * 5m30s\n\
                 * 7d30m\n\
         Options:
                 -b: Activates background mode (no output, and forks process to background).\n\
+                        THIS IS NOT YET IMPLEMENTED.\n\
+                -l: Length (in seconds, default 1) for which to play the alert sound.\n\
+                        N.B. the alert is re-started until the length is exceeded), e.g. if the alert takes 19s and \`-l 20\` is specified, it will play for 38s.\n\
                 -q: Activates quiet mode (no output).\n\
                 -t: Count up to <duration> (default is to count down).\n\
                 -a: Alert sound (default being \`alarm-clock-elapsed.oga\`), provide either:\n\
@@ -16,11 +19,14 @@ USAGE="Usage:\n\
                 -h: displays help message."
 
 # Read Options:
-while getopts ":a:bqth" flag
+while getopts ":a:l:bqth" flag
 do
         case "$flag" in
                 b)
                         BACKGROUND=1
+                        ;;
+                l)
+                        LENGTH="$OPTARG"
                         ;;
                 q)
                         QUIET=1
@@ -61,8 +67,11 @@ fi
 if [ -z "$ALERT" ]; then
         ALERT="alarm-clock-elapsed.oga"
 fi
+if [ -z "$LENGTH" ]; then
+        LENGTH="1s"
+fi
 
-
+# Logic based on options
 case $ALERT in
 ~*)
         echo "is home"
@@ -75,10 +84,28 @@ case $ALERT in
 	;;
 esac
 
+if ((QUIET)); then
+        UTIMER_OPTIONS+=( "-q" )
+fi
+
 
 # Run command
 if ((TIMER)); then
-        utimer -t "${DURATION}"; mpv ${ALERTPATH}
+        utimer -t "${DURATION}" ${UTIMER_OPTIONS[@]};
+        utimer -c "${LENGTH}" ${UTIMER_OPTIONS[@]}&
+        pid=$!
+        while ps -p $pid &>/dev/null; do
+            mpv ${ALERTPATH} &>/dev/null
+        done
 else
-        utimer -c "${DURATION}"; mpv ${ALERTPATH}
+        utimer -c "${DURATION}" ${UTIMER_OPTIONS[@]};
+        utimer -c "${LENGTH}" ${UTIMER_OPTIONS[@]}&
+        # Prompt gets shifted by 1 char width, the following will prevent that and keep output quited,
+        # but it would make the logic more repetitive :/
+        #utimer -c "${DURATION}" &>/dev/null;
+        #utimer -c "${LENGTH}" &>/dev/null &
+        pid=$!
+        while ps -p $pid &>/dev/null; do
+            mpv ${ALERTPATH} &>/dev/null
+        done
 fi
