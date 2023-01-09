@@ -9,7 +9,7 @@ USAGE="Usage:\n\
         Options:
                 -b: Activates background mode (no output, and forks process to background).\n\
                         THIS IS NOT YET IMPLEMENTED.\n\
-                -l: Length (in seconds, default 1) for which to play the alert sound.\n\
+                -l: Length (same format as <duration>, default 1s) for which to play the alert sound.\n\
                         N.B. the alert is re-started until the length is exceeded), e.g. if the alert takes 19s and \`-l 20\` is specified, it will play for 38s.\n\
                 -q: Activates quiet mode (no output).\n\
                 -t: Count up to <duration> (default is to count down).\n\
