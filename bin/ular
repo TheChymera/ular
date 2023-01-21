@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+
+ualarmer -w ${1} &> /dev/null & exit
